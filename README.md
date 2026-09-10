@@ -1,6 +1,6 @@
 # Clinic_stock
 
-Internal clinic stock console for supplies teams working on shared ward tablets and patchy wifi.
+Clinic_stock is a responsive stock management interface for browsing products, viewing product details, and updating stock quantities.
 
 ## Preferred stack
 
@@ -8,92 +8,128 @@ Internal clinic stock console for supplies teams working on shared ward tablets 
 - **TypeScript** for type-safe domain/state modeling
 - **Tailwind CSS** for fast, consistent UI styling
 
-This stack is preferred for the production rollout across multiple clinics. Tailwind defaults are acceptable initially, with project-specific tokens added in `tailwind.config` as rollout needs grow.
+Users can search, filter, sort, paginate, open item details, and update stock with URL-driven navigation, cached API data, responsive layouts, accessibility support, and clear loading/error states.
 
-## Components identified and screen split
+## Components and screen structure
 
-The screen is split into two main regions on tablet and desktop, and stacked on small screens:
+The app has three main routes and one shared application shell.
 
-1. **Left/main region: inventory browser**
-   - `StockToolbar` (search, category filter, clinic filter, sort control)
-   - `StockList` (virtualized/paginated list of stock items)
-   - `StockListItem` (name, category, stock, location summary)
-2. **Right/secondary region: selected item detail**
-   - `StockDetailPanel` (full metadata, current quantity, audit info)
-   - `StockCorrectionForm` (physical count correction action)
-   - `ShareLinkAction` (copy direct item link)
-3. **Cross-cutting components**
-   - `ConnectivityBanner` (online/offline/refresh state)
-   - `LoadingState`, `ErrorState`, `EmptyState`
+### Sign In — `/login`
+
+- `LoginForm` (username/password submission)
+- `AuthGuard` redirect behavior for protected routes
+- `ReturnToRoute` logic so users continue where they left off after sign-in
+
+### Stock List — `/items`
+
+- `StockToolbar` (search, category filter, sort selector)
+- `StockTable` on larger screens
+- `StockCardList` on smaller tablet screens
+- `PaginationControls` (10 items per page)
+- `StockRow` / `StockCard` with key fields: image, name, SKU, category, stock, availability
+
+Price is treated as secondary catalogue information and is not a primary list column.
+
+### Item Details — `/items/:id`
+
+- `ItemHeader` (name, SKU, category)
+- `ItemGallery` (images)
+- `StockStatus` (current stock and availability)
+- `CatalogueMeta` (brand, description, tags)
+- `StockCorrectionForm` with save, pending, error, and retry states
+
+Each item detail route is shareable and directly navigable.
+
+### Shared application components
+
+- `AppLayout` (header, main content, route outlet)
+- `ConnectivityBanner` (online/offline + sync messaging)
+- `LoadingState`, `ErrorState`, `EmptyState`
 
 ## State ownership and why
 
-Server data, URL state, and local UI state are intentionally separate.
+Server data, URL state, and local UI state are kept separate because they have different responsibilities.
 
-### 1) Server data state (remote, cacheable)
+### URL state = where the user is
 
-- Lives in a server-state cache (for example React Query/TanStack Query)
-- Includes: stock items, categories, clinic metadata, and server-confirmed quantities
-- Why: this data is shared, asynchronous, and needs stale/fresh tracking and refetch controls
+- Lives in route params and query params
+- Includes: item id, search term, category filter, sort option, page number
+- Why: shared links must recreate the same view state
 
-### 2) URL state (shareable/navigation state)
+### TanStack Query state = data from the server
 
-- Lives in URL query params and route params
-- Includes: selected item id, search term, category filter, clinic filter, sort selection
-- Why: users share links in chat, so view state must be reproducible from URL alone
+- Includes: items, categories, clinic metadata, and server-confirmed stock values
+- Why: server data is async, shared, and needs caching/staleness controls
 
-### 3) Local UI state (ephemeral interaction state)
+### Local UI state = temporary interaction/input state
 
 - Lives in component state or local store scoped to the page
-- Includes: open/closed panels, form draft input, inline validation, optimistic-save status
-- Why: this state is transient, view-specific, and should not pollute server cache or URL
+- Includes: panel toggles, form drafts, inline validation, transient banners
+- Why: this state is short-lived and should not be encoded in cache or URL
 
-## Fetch, cache, and invalidation approach
+### sessionStorage = authentication tokens
 
-- Fetch stock data per clinic using cache keys like `['stock', clinicId]`
-- Use stale-while-revalidate behavior so cached data renders immediately on weak networks
-- Cache critical reference data (categories/clinics) longer than rapidly changing stock counts
-- On stock correction:
-  - Optimistically update the corrected item in cache for instant feedback
-  - Send mutation to server
-  - Invalidate affected stock queries (clinic + item detail keys) on success
-  - Roll back optimistic value and surface retry UI on failure
-- For offline periods:
-  - Queue correction requests locally
-  - Replay when connectivity returns
-  - Invalidate relevant queries after replay to align with server truth
+- Stores auth/session tokens per tab session
+- Why: tokens should survive refresh but clear when the tab closes
+
+## Fetch, cache, and invalidation
+
+### Fetch
+
+- Fetch stock by clinic with keys such as `['stock', clinicId, filters, page]`
+- Load from cache first when available, then revalidate in the background
+
+### Cache
+
+- Cache list/detail responses for quick route transitions on weak wifi
+- Keep clinic/category metadata cached longer than stock values
+- Show cached data immediately where possible while checking for fresh data
+
+### Invalidate
+
+On stock correction:
+
+1. Disable **Save** while request is in progress
+2. Send mutation to server
+3. On success, invalidate related list/detail queries so UI reflects server-confirmed data
+4. On failure, keep previous server value, show error, and offer retry
+
+For offline periods:
+
+- Queue correction requests locally
+- Resend queued updates when connectivity returns
+- Invalidate impacted queries after replay to resync local and server state
 
 ## Layout, spacing, colour, and typography
 
-- **Layout:** responsive split view (list + detail), stacking on narrow screens
-- **Spacing:** consistent spacing scale (Tailwind spacing tokens, e.g. 2/4/6/8 rhythm)
-- **Colour:** semantic colors for status (normal, warning, critical-low-stock) with accessible contrast
-- **Typography:** use Tailwind default sans stack initially, with clear hierarchy (`text-sm` metadata, `text-base` body, `text-lg` headings)
-- **Theme/tokens:** start with Tailwind defaults, then introduce clinic design tokens (brand, status, spacing aliases) in theme extension for multi-clinic rollout consistency
+1. **Layout:** route-based pages (`/items` list and `/items/:id` detail) with responsive table-to-card behavior on smaller tablets.
+2. **Spacing:** consistent Tailwind spacing scale (2/4/6/8 rhythm).
+3. **Colour:** semantic status colors (normal, warning, critical-low-stock) with accessible contrast ratios.
+4. **Typography:** Tailwind default sans stack with clear hierarchy (`text-sm`, `text-base`, `text-lg`).
+5. **Theme/tokens:** begin with Tailwind defaults, then extend theme with clinic-specific design tokens for brand/status/spacing consistency.
 
 ## Accessibility approach
 
-- Use semantic landmarks (`header`, `main`, `section`, `aside`) and heading hierarchy
-- Ensure full keyboard support for list navigation, detail actions, and stock correction form
-- Associate all inputs with visible labels and clear validation text
-- Use `aria-live` regions for save status/offline-sync feedback
-- Maintain WCAG-compliant contrast for text and status badges
-- Keep touch targets large enough for tablet use
-- Preserve visible focus indicators and never rely on color alone for meaning
+- Keyboard accessible controls, predictable tab order, and a skip link to main content
+- Native form controls for search/filter/pagination/actions with explicit labels
+- `aria-live` announcements for save progress, sync status, and errors
+- Clear loading, empty, and error states that are screen-reader friendly
+- WCAG-compliant contrast, visible focus states, and no color-only status communication
+- Touch-friendly targets for ward tablet interaction
 
 ## Decision log
 
-1. **Decision:** Keep filters and selected item in URL state.
-   - **Alternative rejected:** Keep all selection/filter state only in local component state.
-   - **Why rejected:** Users share item links over chat; local-only state breaks reproducibility.
+1. **Decision:** Use separate list and detail routes (`/items` and `/items/:id`).
+   - **Alternative rejected:** Split-pane list/detail on one route.
+   - **Why rejected:** Route-per-item makes deep links, history navigation, and direct sharing simpler.
 
-2. **Decision:** Use cached server-state tooling (React Query pattern) for stock data.
-   - **Alternative rejected:** Fetch directly in each component with ad-hoc `useEffect` and local state.
-   - **Why rejected:** Ad-hoc fetches duplicate logic, weaken offline behavior, and make invalidation/error handling inconsistent.
+2. **Decision:** Keep URL state, server state, and local UI state separate.
+   - **Alternative rejected:** Single global store for all state categories.
+   - **Why rejected:** Mixed ownership increases coupling and makes cache/navigation behavior harder to reason about.
 
-3. **Decision:** Use React + TypeScript + Tailwind for rollout implementation.
-   - **Alternative rejected:** Continue plain static JavaScript/CSS only.
-   - **Why rejected:** Static-only setup is quick for prototype work but scales poorly for multi-clinic maintainability, typed domain modeling, and shared UI conventions.
+3. **Decision:** Use Tailwind defaults first, then extend tokens incrementally.
+   - **Alternative rejected:** Build a full custom design token system from day one.
+   - **Why rejected:** Default-first delivery is faster and still gives a clean path to clinic-specific theming.
 
 ## Run locally
 
