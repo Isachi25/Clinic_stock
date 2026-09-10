@@ -89,10 +89,11 @@ Cached data can be displayed immediately while the app checks the server for a n
 */Data that changes rarely, such as clinics and categories, can stay cached for longer. Stock counts change more frequently, so they are refreshed more often.*/
 
 On stock correction:
-* Update the corrected item in cache for instant feedback
-* The change is then sent to the server
-* On success, the affected cached stock data is marked as outdated. TanStack Query can then fetch the latest server data to make sure the cache matches the server.
-* On failure, remove the temporary change and restore the original value. Return error and Retry option.
+* Send the correction to the server.
+* Disable the Save button while the request is in progress.
+* Wait for a successful response before treating the correction as saved.
+* On success, invalidate the affected stock queries so the UI reflects server-confirmed data.
+* On failure, retain the original server value and show an error with a Retry action.
 
 For offline periods:
 * Queue correction requests locally
@@ -100,7 +101,7 @@ For offline periods:
 * Invalidate related stock queries. */Helps the app refresh its data and stay up to date with the server.*/
 
 ## Layout, spacing, colour, and typography
-1. Layout: responsive split view (list + detail), stacking on narrow screens
+1. Layout: responsive single-page layouts for each route. The /items route focuses on browsing, while /items/:id focuses on the selected item's details. The list uses a table on larger screens and stacked cards on smaller screens.
 2. Spacing: consistent spacing scale (Tailwind spacing tokens, e.g. 2/4/6/8 rhythm)
 3. Colour: semantic colors for status (normal, warning, critical-low-stock) with accessible contrast
 4. Typography: use Tailwind default sans stack initially, with clear hierarchy (`text-sm` metadata, `text-base` body, `text-lg` headings)
@@ -110,18 +111,18 @@ For offline periods:
 */Consistent styling*/
 
 ## Accessibility approach
-5. Accessibility
-Keyboard accessible: tab order follows the visual order; a skip link moves directly to the main content.
-Search, selects, pagination, and actions use native <input>, <select>, <button>, and <a> elements.
-Visible focus: interactive elements have a clear focus ring; outline: none is not used without a suitable replacement.
-Labels: every form control has a visible label rather than relying on placeholder text.
-Stock list: the table uses proper headers. At 360px, cards still show the item name and stock count as text, so information is never conveyed by colour alone.
-Low-stock status is shown as text alongside the stock number.
-Stock form: the stock field has an associated <label>. Validation uses aria-invalid and connects the error message with aria-describedby.
-Save is a real button rather than a clickable <div>.
-Navigation and errors: document titles update when routes change (for example, Item — Clinic stock). When a page-level error occurs, focus moves to the error heading so keyboard and screen-reader users are not left wondering what happened.
-Touch-friendly: primary controls target roughly 44px touch areas where practical.
-Small screens: the interface remains usable at 360px with a stacked toolbar, no horizontal page scrolling, and cards replacing the wider table layout.g
+* Keyboard accessible: tab order follows the visual order; a skip link moves directly to the main content.
+  Search, selects, pagination, and actions use native <input>, <select>, <button>, and <a> elements.
+* Visible focus: interactive elements have a clear focus ring; outline: none is not used without a suitable replacement.
+* Labels: every form control has a visible label rather than relying on placeholder text.
+* Stock list: the table uses proper headers. At 360px, cards still show the item name and stock count as text, so information is never conveyed by colour alone.
+  Low-stock status is shown as text alongside the stock number.
+* Stock form: the stock field has an associated <label>. Validation uses aria-invalid and connects the error message with aria-describedby.
+  Save is a real button rather than a clickable <div>.
+* Navigation and errors: document titles update when routes change (for example, Item — Clinic stock).
+  When a page-level error occurs, focus moves to the error heading so keyboard and screen-reader users are not left wondering what happened.
+* Touch-friendly: primary controls target roughly 44px touch areas where practical.
+* Small screens: the interface remains usable at 360px with a stacked toolbar, no horizontal page scrolling, and cards replacing the wider table layout.
 
 ## Decision log
 
