@@ -93,7 +93,7 @@ On stock correction:
 * The change is then sent to the server
 * On success, the affected cached stock data is marked as outdated. TanStack Query can then fetch the latest server data to make sure the cache matches the server.
 * On failure, remove the temporary change and restore the original value. Return error and Retry option.
-  - 
+
 For offline periods:
 * Queue correction requests locally
 * Resent the queued updates to the server once the connectivity returns
