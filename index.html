@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clinic Stock Console</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Clinic Stock Console</h1>
+      <p id="network-status" class="network-status" aria-live="polite"></p>
+    </header>
+
+    <main>
+      <section class="controls" aria-label="Stock controls">
+        <label>
+          Search
+          <input id="search-input" type="search" placeholder="Name, SKU, or location" />
+        </label>
+
+        <label>
+          Clinic
+          <select id="clinic-filter"></select>
+        </label>
+
+        <label>
+          Category
+          <select id="category-filter"></select>
+        </label>
+
+        <label>
+          Sort
+          <select id="sort-select">
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="stock-asc">Stock (low-high)</option>
+            <option value="stock-desc">Stock (high-low)</option>
+            <option value="category-asc">Category (A-Z)</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="layout">
+        <section>
+          <h2>Stock items</h2>
+          <ul id="item-list" class="item-list"></ul>
+        </section>
+
+        <aside>
+          <h2>Item detail</h2>
+          <div id="item-detail" class="item-detail">Select an item to see detail.</div>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
