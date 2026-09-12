@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshTokenRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
   const lostPlaceRef = useRef<string | null>(null);
+  const scheduleRefreshRef = useRef<(accessToken: string) => void>(() => {});
 
   const clearRefreshTimer = useCallback(() => {
     if (refreshTimerRef.current !== null) {
@@ -98,30 +99,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
   }, [logout, navigate]);
-
   const scheduleRefresh = useCallback(
     (accessToken: string) => {
       clearRefreshTimer();
+
       const expiry = readAccessTokenExpiry(accessToken);
       if (!expiry) {
         return;
       }
+
       const wait = Math.max(expiry - Date.now() - REFRESH_SKEW_MS, 0);
+
       refreshTimerRef.current = window.setTimeout(() => {
         void (async () => {
           const ok = await refreshSession();
+
           if (!ok) {
             onSessionLost();
             return;
           }
+
           if (accessTokenRef.current) {
-            scheduleRefresh(accessTokenRef.current);
+            scheduleRefreshRef.current(accessTokenRef.current);
           }
         })();
       }, wait);
     },
     [clearRefreshTimer, onSessionLost, refreshSession],
   );
+
+  useEffect(() => {
+    scheduleRefreshRef.current = scheduleRefresh;
+  }, [scheduleRefresh]);
 
   useEffect(() => {
     configureApiClient({

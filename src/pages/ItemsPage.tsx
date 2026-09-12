@@ -22,9 +22,9 @@ export function ItemsPage() {
 
   useDocumentTitle('Stock list — Clinic stock');
 
-  useEffect(() => {
+  /*useEffect(() => {
     setSearchInput(params.q);
-  }, [params.q]);
+  }, [params.q]);*/
 
   useEffect(() => {
     if (debouncedSearch.trim() !== params.q) {

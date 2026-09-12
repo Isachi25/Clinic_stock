@@ -1,4 +1,4 @@
-import { type FormEvent, useId, useState } from 'react';
+import { type SyntheticEvent, useId, useState } from 'react';
 import { parseStockInput } from '../../lib/validateStock';
 
 type StockCorrectionFormProps = {
@@ -23,7 +23,7 @@ export function StockCorrectionForm({
   const error = localError ?? saveError;
   const describedBy = error ? errorId : undefined;
 
-  function handleSubmit(event: FormEvent) {
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const next = parseStockInput(value);
     if (!next.ok) {

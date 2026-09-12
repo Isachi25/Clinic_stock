@@ -1,5 +1,6 @@
-import { SORT_OPTIONS, sortValue } from '../../lib/listParams';
-import type { ProductCategory } from '../api/products';
+import { SORT_OPTIONS, sortValue, type ListParams } from '../../lib/listParams';
+
+import type { ProductCategory } from '../../api/products';
 
 type StockFiltersProps = {
   params: ListParams;

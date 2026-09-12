@@ -114,9 +114,7 @@ export function ItemDetailPage() {
 
 function ItemBody({ product }: { product: Product }) {
   const gallery =
-    product.images && product.images.length > 0
-      ? product.images
-      : [product.thumbnail];
+    product.images.length > 0 ? product.images : [product.thumbnail];
 
   return (
     <article className="mt-4">
@@ -140,7 +138,7 @@ function ItemBody({ product }: { product: Product }) {
         ))}
       </div>
       <p className="mt-4 max-w-prose text-base">{product.description}</p>
-      {product.tags && product.tags.length > 0 ? (
+      {product.tags.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">
           {product.tags.map((tag) => (
             <li

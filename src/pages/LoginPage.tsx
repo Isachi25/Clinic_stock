@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type SyntheticEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
@@ -31,13 +31,13 @@ export function LoginPage() {
     return <Navigate to={from} replace />;
   }
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
     try {
       await login(username.trim(), password);
-      void navigate(from, { replace: true });
+      navigate(from, { replace: true });
     } catch (caught) {
       const message =
         caught instanceof ApiError
