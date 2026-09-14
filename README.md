@@ -78,11 +78,11 @@ Why: they need to survive a page refresh but should disappear when the browser t
 
 ## Fetch, cache, and invalidation
 On stock correction:
-* Send the correction to the server.
-* Disable the Save button while the request is in progress.
-* Wait for a successful response before treating the correction as saved.
-* On success, update the product in the cache because DummyJSON does not persist PUT updates.
-* On failure, keep the original value and show an error with a Retry action.
+1. Send the correction to the server.
+2. Disable the Save button while the request is in progress.
+3. Wait for a successful response before treating the correction as saved.
+4. On success, update the product in the cache because DummyJSON does not persist PUT updates.
+5. On failure, keep the original value and show an error with a Retry action.
   
 ## Layout, spacing, colour, and typography
 1. Layout: responsive layouts for each route. The list uses a table on larger screens and stacked cards on smaller screens.
@@ -91,25 +91,25 @@ On stock correction:
 4. Typography: Tailwind sans stack, `text-sm` metadata, `text-base` body, `text-lg` headings.
 
 ## Accessibility approach
-* Keyboard accessible: tab order follows the visual order; a skip link moves directly to the main content.
+1. Keyboard accessible: tab order follows the visual order; a skip link moves directly to the main content.
   Search, selects, pagination, and actions use native `<input>`, `<select>`, `<button>`, and `<a>` elements.
-* Visible focus: interactive elements have a clear focus ring; `outline: none` is not used without a replacement.
-* Labels: every form control has a visible label rather than relying on placeholder text.
-* Stock list: the table uses proper headers. At 360px, cards still show the item name and stock count as text.
+2 Visible focus: interactive elements have a clear focus ring; `outline: none` is not used without a replacement.
+3. Labels: every form control has a visible label rather than relying on placeholder text.
+4. Stock list: the table uses proper headers. At 360px, cards still show the item name and stock count as text.
   Low-stock status is shown as text alongside the stock number.
-* Stock form: the stock field has an associated `<label>`. Validation uses `aria-invalid` and `aria-describedby`.
-* Navigation and errors: document titles update when routes change.
+5. Stock form: the stock field has an associated `<label>`. Validation uses `aria-invalid` and `aria-describedby`.
+6. Navigation and errors: document titles update when routes change.
   When a page-level error occurs, focus moves to the error heading.
-* Touch-friendly: primary controls target roughly 44px (`min-h-11`) where practical.
-* Small screens: usable at 360px with a stacked toolbar, no wide table, cards instead.
+7. Touch-friendly: primary controls target roughly 44px (`min-h-11`) where practical.
+8. Small screens: usable at 360px with a stacked toolbar, no wide table, cards instead.
 
 ## Tooling
-* Prettier (`npm run format`, `npm run format:check`)
-* ESLint with TypeScript strict type-checked rules, `eqeqeq`, `curly`, `no-console`, and `consistent-type-imports`
-* commitlint + husky `commit-msg` hook (Conventional Commits, e.g. `feat: add stock list pagination`)
-* `.editorconfig`
-* GitHub Actions: `.github/workflows/ci.yml` fails on format, lint, test or build errors. Pull requests also run commitlint on the PR range.
-* GitHub Pages deploy: `.github/workflows/pages.yml` (enable Pages: Settings → Pages → GitHub Actions).
+1. Prettier (`npm run format`, `npm run format:check`)
+2. ESLint with TypeScript strict type-checked rules, `eqeqeq`, `curly`, `no-console`, and `consistent-type-imports`
+3. commitlint + husky `commit-msg` hook (Conventional Commits, e.g. `feat: add stock list pagination`)
+4. `.editorconfig`
+5. GitHub Actions: `.github/workflows/ci.yml` fails on format, lint, test or build errors. Pull requests also run commitlint on the PR range.
+6. GitHub Pages deploy: `.github/workflows/pages.yml` (enable Pages: Settings → Pages → GitHub Actions).
 
 ## DummyJSON limitations
 DummyJSON simulates `PUT` updates but does not persist them. The PUT response contains the updated product, but a later GET returns the original catalogue value.
@@ -119,29 +119,33 @@ A full reload can return the original catalogue value again because the mock API
 
 ## Out of scope
 The following are intentionally not implemented in this version:
-* Offline mutation queue.
-* Bulk stock correction.
-* Virtualisation of the full catalogue.
-* Multi-clinic stock management.
+1. Offline mutation queue.
+2. Bulk stock correction.
+3. Virtualisation of the full catalogue.
+4. Multi-clinic stock management.
 These were excluded because DummyJSON does not provide the required persistent or clinic-specific data, and the assessment focuses on the required stock workflow.
 
 ## Decision log
-1. Decision: Separate list and detail routes (/items, /items/:id).
+1. Decision: Separate list and detail routes (`/items`, `/items/:id`).
    Rejected: Split-pane list/detail on one route.
-   Why: Item URLs must be pasteable in chat. Split-pane makes deep links, history, and 360px layout harder.
+   Why: Item URLs must be pasteable in chat. Split-pane makes deep links, browser history, and 360px layouts harder.
 
-2. Decision: URL state, TanStack Query, and local UI state stay separate.
+2. Decision: Keep `search` in the URL instead of only local state.
+   Rejected: Local-only search input state.
+   Why: URL state enables deep links, browser navigation, and reproducible QA scenarios.
+
+3. Decision: Keep URL state, TanStack Query, and local UI state separate.
    Rejected: One global store for filters, tokens, and server rows.
-   Why: Shared links and reload are URL problems. Cache/staleness is a server-data problem. Mixing them makes “why did refresh lose my search?” hard to answer.
+   Why: Shared links and reload are URL problems. Cache and staleness are server-data problems. Mixing them makes issues such as “why did refresh lose my search?” harder to reason about.
 
-3. Decision: After a successful stock PUT, update the cache from the PUT body; do not invalidate GET.
+4. Decision: After a successful stock PUT, update the cache from the PUT body instead of invalidating the GET query.
    Rejected: Standard “mutate then invalidateQueries”.
-   Why: DummyJSON does not persist writes. Invalidate would refetch the old count and look like a product bug. A real clinic API would invalidate.
+   Why: DummyJSON does not persist writes. Invalidating would refetch the old count and make the correction appear to have failed. A real clinic API would invalidate.
 
-4. Decision: Expired session → refresh, then /login with ReturnToRoute; never an empty shell.
-   Rejected: if (!token) return null, or /login that drops the list query / item id.
+5. Decision: Expired session → refresh, then `/login` with `ReturnToRoute`; never show an empty shell.
+   Rejected: `if (!token) return null`, or `/login` that drops the list query / item ID.
    Why: The brief requires preserving the user's place and avoiding a blank screen when the 1-minute token expires.
 
-5. Decision: No clinicId and no offline write queue in v1.
+6. Decision: No `clinicId` and no offline write queue in v1.
    Rejected: Modelling “stock by clinic” or queuing corrections while offline.
-   Why: The API is a single fake catalogue. Multi-clinic and durable writes are not in the data. Optional extras must not crowd out search races, URL restore, and error recovery.
+   Why: The API is a single fake catalogue. Multi-clinic and durable writes are not represented in the data. Optional extras must not crowd out search races, URL restore, and error recovery.
