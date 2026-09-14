@@ -1,4 +1,5 @@
 # Clinic stock
+
 Clinic stock is a responsive stock UI for browsing DummyJSON products, opening a shareable item page, and correcting stock counts.
 Users can sign in, then search, filter, sort, and paginate stock, open a shareable item page, and correct a stock count.
 
@@ -8,6 +9,7 @@ Users can sign in, then search, filter, sort, and paginate stock, open a shareab
 
 This implementation follows the assessment brief and the original product notes below.
 The stack is:
+
 1. React.
 2. TypeScript.
 3. Vite.
@@ -16,15 +18,19 @@ The stack is:
 6. React Router.
 
 ## Components and screen structure
+
 The app has three main routes, all using the same application layout.
 
 ## Sign In — `/login`
+
 Users can sign in with their username and password.
 If someone tries to access a protected page while signed out, they are redirected to the login page.
 After signing in, they can return to the page they originally requested.
 
 ## Stock List — `/items`
+
 The main stock screen provides:
+
 1. Search, category, and sorting filters.
 2. A responsive list displayed as a table on larger screens and stacked cards on smaller tablet screens.
 3. Key stock information such as: Item image, Name, SKU, Category, Stock count, Availability, etc.
@@ -38,8 +44,10 @@ Changing the category or sort resets the page to 1. If a URL points to a page wi
 Test slow requests under **Assessment test tools → Slow requests**, or add `?delay=2000`.
 
 ## Item Details — `/items/:id`
+
 Each item has its own shareable detail page.
 The page shows:
+
 1. Item name, SKU, category, and images
 2. Current stock count and availability
 3. Catalogue information such as brand, description, and tags
@@ -49,61 +57,73 @@ When saving a stock correction, the Save button is disabled while the request is
 If the update fails, the user is shown an error with an option to retry.
 
 ## Responsive & Accessible Design
-The interface is designed primarily for tablet use, including narrower ward tablet screens. We avoid horizontal scrolling tables on small screens by switching to stacked cards. 
+
+The interface is designed primarily for tablet use, including narrower ward tablet screens. We avoid horizontal scrolling tables on small screens by switching to stacked cards.
 The app also includes accessible status messages so important events such as saving, session refreshes, and errors can be announced to screen-reader users.
 
 ## Navigation
+
 The app uses separate list and detail routes rather than a split-pane layout. This makes individual item pages easy to open, share, and navigate to directly.
 
 ## State ownership and why
+
 Server data, URL state, and local UI state are kept separate because they have different responsibilities.
 
 ### URL = where the user is
+
 Lives in URL query params and route params.
 Includes: selected item id, search term, category filter, sort selection, page.
 Why: users share links in chat, so view state must be reproducible from URL alone.
 
 ### TanStack Query = data from the server
+
 Includes: stock items, categories, and server-confirmed quantities.
 Why: this data is shared, asynchronous, and needs stale/fresh tracking and refetch controls.
 
 ### Local state = temporary UI/input state
+
 Lives in the component state scoped to the page.
 Includes: search box text before debounce, form draft input, inline validation.
 Why: this state is transient, view-specific, and should not pollute server cache or URL.
 
 ### sessionStorage = authentication tokens
+
 Authentication tokens are kept separately in sessionStorage.
 Why: they need to survive a page refresh but should disappear when the browser tab is closed.
 
 ## Fetch, cache, and invalidation
+
 On stock correction:
+
 1. Send the correction to the server.
 2. Disable the Save button while the request is in progress.
 3. Wait for a successful response before treating the correction as saved.
 4. On success, update the product in the cache because DummyJSON does not persist PUT updates.
 5. On failure, keep the original value and show an error with a Retry action.
-  
+
 ## Layout, spacing, colour, and typography
+
 1. Layout: responsive layouts for each route. The list uses a table on larger screens and stacked cards on smaller screens.
 2. Spacing: Tailwind spacing scale (2/4/6/8 rhythm).
 3. Colour: semantic stock colours (in stock, low, out of stock) with a text label so status is not colour-only.
 4. Typography: Tailwind sans stack, `text-sm` metadata, `text-base` body, `text-lg` headings.
 
 ## Accessibility approach
+
 1. Keyboard accessible: tab order follows the visual order; a skip link moves directly to the main content.
-  Search, selects, pagination, and actions use native `<input>`, `<select>`, `<button>`, and `<a>` elements.
-2 Visible focus: interactive elements have a clear focus ring; `outline: none` is not used without a replacement.
-3. Labels: every form control has a visible label rather than relying on placeholder text.
-4. Stock list: the table uses proper headers. At 360px, cards still show the item name and stock count as text.
-  Low-stock status is shown as text alongside the stock number.
-5. Stock form: the stock field has an associated `<label>`. Validation uses `aria-invalid` and `aria-describedby`.
-6. Navigation and errors: document titles update when routes change.
-  When a page-level error occurs, focus moves to the error heading.
-7. Touch-friendly: primary controls target roughly 44px (`min-h-11`) where practical.
-8. Small screens: usable at 360px with a stacked toolbar, no wide table, cards instead.
+   Search, selects, pagination, and actions use native `<input>`, `<select>`, `<button>`, and `<a>` elements.
+   2 Visible focus: interactive elements have a clear focus ring; `outline: none` is not used without a replacement.
+2. Labels: every form control has a visible label rather than relying on placeholder text.
+3. Stock list: the table uses proper headers. At 360px, cards still show the item name and stock count as text.
+   Low-stock status is shown as text alongside the stock number.
+4. Stock form: the stock field has an associated `<label>`. Validation uses `aria-invalid` and `aria-describedby`.
+5. Navigation and errors: document titles update when routes change.
+   When a page-level error occurs, focus moves to the error heading.
+6. Touch-friendly: primary controls target roughly 44px (`min-h-11`) where practical.
+7. Small screens: usable at 360px with a stacked toolbar, no wide table, cards instead.
 
 ## Tooling
+
 1. Prettier (`npm run format`, `npm run format:check`)
 2. ESLint with TypeScript strict type-checked rules, `eqeqeq`, `curly`, `no-console`, and `consistent-type-imports`
 3. commitlint + husky `commit-msg` hook (Conventional Commits, e.g. `feat: add stock list pagination`)
@@ -112,20 +132,24 @@ On stock correction:
 6. GitHub Pages deploy: `.github/workflows/pages.yml` (enable Pages: Settings → Pages → GitHub Actions).
 
 ## DummyJSON limitations
+
 DummyJSON simulates `PUT` updates but does not persist them. The PUT response contains the updated product, but a later GET returns the original catalogue value.
 After a successful correction, the app writes the PUT response into the TanStack Query cache instead of immediately invalidating and refetching.
 This keeps the corrected value visible during the current session.
 A full reload can return the original catalogue value again because the mock API does not persist writes.
 
 ## Out of scope
+
 The following are intentionally not implemented in this version:
+
 1. Offline mutation queue.
 2. Bulk stock correction.
 3. Virtualisation of the full catalogue.
 4. Multi-clinic stock management.
-These were excluded because DummyJSON does not provide the required persistent or clinic-specific data, and the assessment focuses on the required stock workflow.
+   These were excluded because DummyJSON does not provide the required persistent or clinic-specific data, and the assessment focuses on the required stock workflow.
 
 ## Decision log
+
 1. Decision: Separate list and detail routes (`/items`, `/items/:id`).
    Rejected: Split-pane list/detail on one route.
    Why: Item URLs must be pasteable in chat. Split-pane makes deep links, browser history, and 360px layouts harder.
