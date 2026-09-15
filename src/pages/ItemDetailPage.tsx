@@ -40,7 +40,11 @@ export function ItemDetailPage() {
       return updateProductStock(Number(id), stock);
     },
     onSuccess: (updated) => {
-      queryClient.setQueryData(['product', id, demoKey], updated);
+      queryClient.setQueryData<Product | undefined>(
+        ['product', id, demoKey],
+        (current) => (current ? { ...current, ...updated } : updated),
+      );
+
       queryClient.setQueriesData<ProductListResponse>(
         { queryKey: ['products'] },
         (current) => {
@@ -50,7 +54,7 @@ export function ItemDetailPage() {
           return {
             ...current,
             products: current.products.map((item) =>
-              item.id === updated.id ? { ...item, stock: updated.stock } : item,
+              item.id === updated.id ? { ...item, ...updated } : item,
             ),
           };
         },
